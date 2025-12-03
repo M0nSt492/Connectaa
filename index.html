@@ -11,32 +11,36 @@
     padding: 0;
     overflow: hidden;
     height: 100%;
-    font-family: 'Mountains of Christmas', cursive;
+    width: 100%;
     background: #000;
-    touch-action: manipulation;
+    font-family: 'Mountains of Christmas', cursive;
+    touch-action: manipulation; /* previne zoom por duplo toque */
   }
+
   canvas {
     display: block;
-    position: absolute;
-    top: 0;
-    left: 0;
+    background: none;
+    touch-action: manipulation;
   }
+
   #overlay {
     position: absolute;
-    top: 50%;
+    top: 40%;
     left: 50%;
-    transform: translate(-50%, -50%);
+    transform: translateX(-50%);
     display: flex;
     flex-direction: column;
     align-items: center;
     color: #fff;
     text-align: center;
     pointer-events: none;
+    font-family: 'Mountains of Christmas', cursive;
   }
+
   #overlay button {
     pointer-events: auto;
     padding: 10px 20px;
-    font-size: 20px;
+    font-size: 18px;
     border: none;
     border-radius: 8px;
     background: rgba(255,255,255,0.8);
@@ -61,28 +65,22 @@ const ctx = canvas.getContext('2d');
 const overlay = document.getElementById('overlay');
 const startBtn = document.getElementById('startBtn');
 
-// Base do jogo
+// Resolução base do jogo
 const GAME_WIDTH = 480;
 const GAME_HEIGHT = 640;
-canvas.width = GAME_WIDTH;
-canvas.height = GAME_HEIGHT;
 
-// Escala para fullscreen
-let scale = 1;
-function resizeCanvas() {
-  const windowWidth = window.innerWidth;
-  const windowHeight = window.innerHeight;
-  scale = Math.min(windowWidth / GAME_WIDTH, windowHeight / GAME_HEIGHT);
-  canvas.style.width = GAME_WIDTH * scale + 'px';
-  canvas.style.height = GAME_HEIGHT * scale + 'px';
-}
-window.addEventListener('resize', resizeCanvas);
-resizeCanvas();
+// Variáveis de escala
+let scaleX = 1, scaleY = 1;
 
 // Imagens
-const bgImg = new Image(); bgImg.src = 'menuu.jpg';
-const santaImg = new Image(); santaImg.src = 'santa.png';
-const logoImg = new Image(); logoImg.src = 'connecta.png';
+const bgImg = new Image();
+bgImg.src = 'menuu.jpg';
+
+const santaImg = new Image();
+santaImg.src = 'santa.png';
+
+const logoImg = new Image();
+logoImg.src = 'connecta.png';
 
 // Jogador e física
 let player = {x: 100, y: GAME_HEIGHT/4, w: 48, h: 48, vy: 0, rotation:0};
@@ -98,6 +96,16 @@ let score = 0;
 let best = Number(localStorage.getItem('flappy_connecta_best') || 0);
 let gameOver = false;
 let started = false;
+
+// Função para fullscreen e escala
+function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    scaleX = canvas.width / GAME_WIDTH;
+    scaleY = canvas.height / GAME_HEIGHT;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
 
 function resetGame() {
   pipes = [];
@@ -115,8 +123,8 @@ function resetGame() {
     <button id="startBtn">Começar</button>
   `;
   document.getElementById('startBtn').addEventListener('touchstart', function(e){
-    e.preventDefault();
-    flap();
+      e.preventDefault();
+      flap();
   }, {passive:false});
 }
 
@@ -178,9 +186,9 @@ function update(dt) {
         <button id="startBtn">Tentar novamente</button>
       `;
       document.getElementById('startBtn').addEventListener('touchstart', function(e){
-        e.preventDefault();
-        flap();
-      }, {passive:false});
+          e.preventDefault();
+          flap();
+      }, {passive: false});
     }
   }
 
@@ -192,55 +200,56 @@ function update(dt) {
 function drawPipes() {
   for(let p of pipes){
     ctx.fillStyle = "#B22222";
-    ctx.fillRect(p.x, p.top + pipeGap, pipeWidth, GAME_HEIGHT-(p.top+pipeGap));
+    ctx.fillRect(p.x * scaleX, (p.top + pipeGap) * scaleY, pipeWidth * scaleX, (GAME_HEIGHT-(p.top+pipeGap)) * scaleY);
     ctx.fillStyle = "#8B0000";
-    ctx.fillRect(p.x, p.top + pipeGap, pipeWidth, 10);
+    ctx.fillRect(p.x * scaleX, (p.top + pipeGap) * scaleY, pipeWidth * scaleX, 10 * scaleY);
     ctx.fillStyle = "#B22222";
-    ctx.fillRect(p.x, 0, pipeWidth, p.top);
+    ctx.fillRect(p.x * scaleX, 0, pipeWidth * scaleX, p.top * scaleY);
     ctx.fillStyle = "#8B0000";
-    ctx.fillRect(p.x, p.top-10, pipeWidth, 10);
+    ctx.fillRect(p.x * scaleX, (p.top-10) * scaleY, pipeWidth * scaleX, 10 * scaleY);
   }
 }
 
 function draw() {
-  ctx.save();
-  ctx.scale(scale, scale);
-  ctx.clearRect(0,0,GAME_WIDTH,GAME_HEIGHT);
-
+  // fundo
   if(bgImg.complete && bgImg.naturalWidth > 0){
-    ctx.drawImage(bgImg, 0, 0, GAME_WIDTH, GAME_HEIGHT);
+    ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
   }
 
+  // logo no centro em baixo mantendo proporção
   if(logoImg.complete && logoImg.naturalWidth > 0){
-    const logoWidth = 160;
-    const logoHeight = 50;
-    const x = (GAME_WIDTH - logoWidth)/2;
-    const y = GAME_HEIGHT - logoHeight - 10;
+    const logoWidth = 160 * scaleX;
+    const logoHeight = 50 * scaleY;
+    const x = (canvas.width - logoWidth) / 2;
+    const y = canvas.height - logoHeight - 10 * scaleY;
     ctx.drawImage(logoImg, x, y, logoWidth, logoHeight);
   }
 
   drawPipes();
 
-  ctx.translate(player.x, player.y);
+  // jogador
+  ctx.save();
+  ctx.translate(player.x * scaleX, player.y * scaleY);
   ctx.rotate(player.rotation);
   if(santaImg.complete && santaImg.naturalWidth > 0){
-    ctx.drawImage(santaImg, -player.w/2, -player.h/2, player.w, player.h);
+    ctx.drawImage(santaImg,-player.w/2 * scaleX,-player.h/2 * scaleY,player.w * scaleX,player.h * scaleY);
   }
   ctx.restore();
 
-  ctx.font = "28px 'Mountains of Christmas', cursive";
+  // UI
   ctx.fillStyle = "#fff";
+  ctx.font = `${28 * scaleY}px 'Mountains of Christmas'`;
   ctx.textAlign = "center";
-  ctx.fillText(`Score: ${score}`, GAME_WIDTH/2, 48);
-  ctx.font = "16px 'Mountains of Christmas', cursive";
-  ctx.fillText(`Best: ${best}`, GAME_WIDTH-60, 32);
+  ctx.fillText(`Score: ${score}`, (GAME_WIDTH/2) * scaleX, 48 * scaleY);
+  ctx.font = `${16 * scaleY}px 'Mountains of Christmas'`;
+  ctx.fillText(`Best: ${best}`, (GAME_WIDTH-60) * scaleX, 32 * scaleY);
 }
 
 // Eventos
 canvas.addEventListener('touchstart', function(e){
-  e.preventDefault();
-  flap();
-}, {passive:false});
+    e.preventDefault();
+    flap();
+}, {passive: false});
 
 let lastTime = performance.now();
 function loop(now){
@@ -256,6 +265,8 @@ loop(performance.now());
 
 </body>
 </html>
+
+
 
 
 
