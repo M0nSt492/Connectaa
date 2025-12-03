@@ -11,31 +11,23 @@
     padding: 0;
     overflow: hidden;
     height: 100%;
-    width: 100%;
     background: #000;
     font-family: 'Mountains of Christmas', cursive;
-    touch-action: manipulation;
   }
-
   canvas {
     display: block;
-    background: none;
-    touch-action: manipulation;
   }
-
   #overlay {
     position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
+    top: 40%;
+    width: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
     color: #fff;
     text-align: center;
     pointer-events: none;
-    font-family: 'Mountains of Christmas', cursive;
   }
-
   #overlay button {
     pointer-events: auto;
     padding: 10px 20px;
@@ -64,28 +56,26 @@ const ctx = canvas.getContext('2d');
 const overlay = document.getElementById('overlay');
 const startBtn = document.getElementById('startBtn');
 
-// Resolução base do jogo
-const GAME_WIDTH = 480;
-const GAME_HEIGHT = 640;
+const BASE_WIDTH = 480;
+const BASE_HEIGHT = 640;
 
-// Variáveis de escala
-let scaleX = 1, scaleY = 1;
+let scale = 1;
+let offsetX = 0;
+let offsetY = 0;
 
 // Imagens
 const bgImg = new Image();
 bgImg.src = 'menuu.jpg';
-
 const santaImg = new Image();
 santaImg.src = 'santa.png';
-
 const logoImg = new Image();
 logoImg.src = 'connecta.png';
 
 // Jogador e física
-let player = {x: 100, y: GAME_HEIGHT/4, w: 48, h: 48, vy: 0, rotation:0};
+let player = {x: 100, y: BASE_HEIGHT/4, w: 48, h: 48, vy:0, rotation:0};
 let pipes = [];
 let gravity = 0.7;
-let flapStrength = -6;
+let flapStrength = -8;
 let pipeGap = 150;
 let pipeWidth = 60;
 let pipeSpeed = 3;
@@ -96,22 +86,20 @@ let best = Number(localStorage.getItem('flappy_connecta_best') || 0);
 let gameOver = false;
 let started = false;
 
-// Função para fullscreen e escala
-function resizeCanvas() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    scaleX = canvas.width / GAME_WIDTH;
-    scaleY = canvas.height / GAME_HEIGHT;
-
-    // Ajusta overlay verticalmente
-    overlay.style.top = `${canvas.height * 0.35}px`;
+// Redimensionamento fullscreen
+function resizeCanvas(){
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  scale = Math.min(canvas.width / BASE_WIDTH, canvas.height / BASE_HEIGHT);
+  offsetX = (canvas.width - BASE_WIDTH * scale)/2;
+  offsetY = (canvas.height - BASE_HEIGHT * scale)/2;
 }
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 
 function resetGame() {
   pipes = [];
-  player.y = GAME_HEIGHT/4;
+  player.y = BASE_HEIGHT/4;
   player.vy = 0;
   player.rotation = 0;
   score = 0;
@@ -124,43 +112,35 @@ function resetGame() {
     <p>Toca no ecrã para jogar — O Pai Natal está à espera!</p>
     <button id="startBtn">Começar</button>
   `;
-  const btn = document.getElementById('startBtn');
-  btn.addEventListener('touchstart', function(e){
-      e.preventDefault();
-      flap();
-  }, {passive:false});
+  document.getElementById('startBtn').addEventListener('click', flap);
 }
 
 function spawnPipe() {
   const minTop = 60;
-  const maxTop = GAME_HEIGHT - pipeGap - 60;
+  const maxTop = BASE_HEIGHT - pipeGap - 60;
   const top = Math.floor(Math.random() * (maxTop - minTop + 1)) + minTop;
-  pipes.push({x: GAME_WIDTH + 10, top: top, scored:false});
+  pipes.push({x: BASE_WIDTH + 10, top: top, scored:false});
 }
 
 function flap() {
-  if(gameOver) {
-    resetGame();
-    return;
-  }
+  if(gameOver){ resetGame(); return; }
   player.vy = flapStrength;
   player.rotation = -0.6;
   started = true;
   overlay.style.display = 'none';
 }
 
-function rectsIntersect(a,b) {
+function rectsIntersect(a,b){
   return !(a.x + a.w < b.x || a.x > b.x + b.w || a.y + a.h < b.y || a.y > b.y + b.h);
 }
 
-function update(dt) {
+function update(dt){
   if(!started || gameOver) return;
-
   player.vy += gravity;
   player.y += player.vy * (dt/16.6667);
   player.rotation = Math.max(Math.min(player.vy / 12, 1.2), -1.2);
 
-  if(performance.now() - lastPipeTime > pipeInterval) {
+  if(performance.now() - lastPipeTime > pipeInterval){
     spawnPipe();
     lastPipeTime = performance.now();
   }
@@ -172,14 +152,13 @@ function update(dt) {
     if(!p.scored && p.x + pipeWidth < player.x){
       p.scored = true;
       score++;
-      if(score>best) { best = score; localStorage.setItem('flappy_connecta_best', best);}
+      if(score>best){ best = score; localStorage.setItem('flappy_connecta_best', best);}
     }
-
     if(p.x + pipeWidth < -20) pipes.splice(i,1);
 
     const playerRect = {x: player.x - player.w/2, y: player.y - player.h/2, w: player.w, h: player.h};
     const pipeTopRect = {x: p.x, y:0, w:pipeWidth, h:p.top};
-    const pipeBottomRect = {x: p.x, y:p.top+pipeGap, w:pipeWidth, h:GAME_HEIGHT-(p.top+pipeGap)};
+    const pipeBottomRect = {x: p.x, y:p.top+pipeGap, w:pipeWidth, h:BASE_HEIGHT-(p.top+pipeGap)};
 
     if(rectsIntersect(playerRect, pipeTopRect) || rectsIntersect(playerRect, pipeBottomRect)){
       gameOver = true;
@@ -188,71 +167,67 @@ function update(dt) {
         <h1>Distribuiste ${score} presente${score !== 1 ? 's' : ''} 🎁</h1>
         <button id="startBtn">Tentar novamente</button>
       `;
-      const btn = document.getElementById('startBtn');
-      btn.addEventListener('touchstart', function(e){
-          e.preventDefault();
-          flap();
-      }, {passive: false});
+      document.getElementById('startBtn').addEventListener('click', flap);
     }
   }
 
   const halfH = player.h/2;
-  if(player.y + halfH > GAME_HEIGHT) { player.y = GAME_HEIGHT-halfH; gameOver=true; overlay.style.display='flex'; }
+  if(player.y + halfH > BASE_HEIGHT) { player.y = BASE_HEIGHT-halfH; gameOver=true; overlay.style.display='flex'; }
   if(player.y - halfH < 0) { player.y = halfH; player.vy=0; }
 }
 
-function drawPipes() {
+function drawPipes(){
   for(let p of pipes){
     ctx.fillStyle = "#B22222";
-    ctx.fillRect(p.x * scaleX, (p.top + pipeGap) * scaleY, pipeWidth * scaleX, (GAME_HEIGHT-(p.top+pipeGap)) * scaleY);
+    ctx.fillRect(p.x, p.top + pipeGap, pipeWidth, BASE_HEIGHT-(p.top+pipeGap));
     ctx.fillStyle = "#8B0000";
-    ctx.fillRect(p.x * scaleX, (p.top + pipeGap) * scaleY, pipeWidth * scaleX, 10 * scaleY);
+    ctx.fillRect(p.x, p.top + pipeGap, pipeWidth, 10);
     ctx.fillStyle = "#B22222";
-    ctx.fillRect(p.x * scaleX, 0, pipeWidth * scaleX, p.top * scaleY);
+    ctx.fillRect(p.x, 0, pipeWidth, p.top);
     ctx.fillStyle = "#8B0000";
-    ctx.fillRect(p.x * scaleX, (p.top-10) * scaleY, pipeWidth * scaleX, 10 * scaleY);
+    ctx.fillRect(p.x, p.top-10, pipeWidth, 10);
   }
 }
 
-function draw() {
-  if(bgImg.complete && bgImg.naturalWidth > 0){
-    ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
-  }
+function draw(){
+  // Limpa e aplica transform
+  ctx.setTransform(scale,0,0,scale,offsetX,offsetY);
+  ctx.clearRect(0,0,BASE_WIDTH,BASE_HEIGHT);
 
-  if(logoImg.complete && logoImg.naturalWidth > 0){
-    const logoWidth = 160 * scaleX;
-    const logoHeight = 50 * scaleY;
-    const x = (canvas.width - logoWidth) / 2;
-    const y = canvas.height - logoHeight - 10 * scaleY;
-    ctx.drawImage(logoImg, x, y, logoWidth, logoHeight);
+  // Fundo
+  if(bgImg.complete && bgImg.naturalWidth>0) ctx.drawImage(bgImg,0,0,BASE_WIDTH,BASE_HEIGHT);
+
+  // Logo
+  if(logoImg.complete && logoImg.naturalWidth>0){
+    const logoWidth = 160;
+    const logoHeight = 50;
+    const x = (BASE_WIDTH - logoWidth)/2;
+    const y = BASE_HEIGHT - logoHeight - 10;
+    ctx.drawImage(logoImg,x,y,logoWidth,logoHeight);
   }
 
   drawPipes();
 
+  // Jogador
   ctx.save();
-  ctx.translate(player.x * scaleX, player.y * scaleY);
+  ctx.translate(player.x,player.y);
   ctx.rotate(player.rotation);
-  if(santaImg.complete && santaImg.naturalWidth > 0){
-    ctx.drawImage(santaImg,-player.w/2 * scaleX,-player.h/2 * scaleY,player.w * scaleX,player.h * scaleY);
-  }
+  if(santaImg.complete && santaImg.naturalWidth>0) ctx.drawImage(santaImg,-player.w/2,-player.h/2,player.w,player.h);
   ctx.restore();
 
-  ctx.fillStyle = "#fff";
-  ctx.font = `${28 * scaleY}px 'Mountains of Christmas'`;
-  ctx.textAlign = "center";
-  ctx.fillText(`Score: ${score}`, (GAME_WIDTH/2) * scaleX, 48 * scaleY);
-  ctx.font = `${16 * scaleY}px 'Mountains of Christmas'`;
-  ctx.fillText(`Best: ${best}`, (GAME_WIDTH-60) * scaleX, 32 * scaleY);
+  // UI
+  ctx.fillStyle="#fff";
+  ctx.font="28px 'Mountains of Christmas'";
+  ctx.textAlign="center";
+  ctx.fillText(`Score: ${score}`, BASE_WIDTH/2, 48);
+  ctx.font="16px 'Mountains of Christmas'";
+  ctx.fillText(`Best: ${best}`, BASE_WIDTH-60, 32);
 }
 
 // Eventos
-canvas.addEventListener('touchstart', function(e){
-    e.preventDefault();
-    flap();
-}, {passive: false});
-
+canvas.addEventListener('touchstart', function(e){ e.preventDefault(); flap(); }, {passive:false});
 canvas.addEventListener('mousedown', flap);
-window.addEventListener('keydown', (e) => { if(e.code === "Space") flap(); });
+window.addEventListener('keydown', (e)=>{ if(e.code==='Space') flap(); });
 
 let lastTime = performance.now();
 function loop(now){
@@ -262,13 +237,11 @@ function loop(now){
   draw();
   requestAnimationFrame(loop);
 }
-
 loop(performance.now());
 </script>
 
 </body>
 </html>
-
 
 
 
