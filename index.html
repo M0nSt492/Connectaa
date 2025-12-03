@@ -14,7 +14,7 @@
     width: 100%;
     background: #000;
     font-family: 'Mountains of Christmas', cursive;
-    touch-action: manipulation; /* previne zoom por duplo toque */
+    touch-action: manipulation;
   }
 
   canvas {
@@ -63,7 +63,6 @@
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 const overlay = document.getElementById('overlay');
-const startBtn = document.getElementById('startBtn');
 
 // Resolução base do jogo
 const GAME_WIDTH = 480;
@@ -96,6 +95,15 @@ let score = 0;
 let best = Number(localStorage.getItem('flappy_connecta_best') || 0);
 let gameOver = false;
 let started = false;
+
+// Áudio
+const bgMusic = new Audio('musica_fundo.mp3'); // música de fundo
+bgMusic.loop = true;
+bgMusic.volume = 0.5;
+bgMusic.play().catch(() => {});
+
+const jumpSound = new Audio('santa_salto.mp3'); // som do salto
+jumpSound.volume = 0.7;
 
 // Função para fullscreen e escala
 function resizeCanvas() {
@@ -144,6 +152,10 @@ function flap() {
   player.rotation = -0.6;
   started = true;
   overlay.style.display = 'none';
+  
+  // tocar som do salto
+  jumpSound.currentTime = 0;
+  jumpSound.play().catch(() => {});
 }
 
 function rectsIntersect(a,b) {
@@ -216,7 +228,7 @@ function draw() {
     ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
   }
 
-  //  no centro em baixo mantendo proporção
+  // logo
   if(logoImg.complete && logoImg.naturalWidth > 0){
     const logoWidth = 200 * scaleX;
     const logoHeight = 80 * scaleY;
@@ -265,6 +277,7 @@ loop(performance.now());
 
 </body>
 </html>
+
 
 
 
