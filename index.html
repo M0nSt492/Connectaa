@@ -258,9 +258,17 @@ function draw(){
 }
 
 // Eventos
-canvas.addEventListener('touchstart', flap, {passive: false});
-canvas.addEventListener('mousedown', flap);
-document.addEventListener('keydown', (e)=>{ if(e.code==='Space') flap(); });
+// Detecta se é telemóvel
+const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+// Eventos de input
+if(isMobile){
+  canvas.addEventListener('touchstart', flap, {passive: false});
+}else{
+  canvas.addEventListener('mousedown', flap);
+  document.addEventListener('keydown', (e)=>{ if(e.code==='Space') flap(); });
+}
+
 
 let lastTime = performance.now();
 function loop(now){
@@ -276,6 +284,7 @@ loop(performance.now());
 
 </body>
 </html>
+
 
 
 
