@@ -108,7 +108,7 @@ function resetGame() {
     <p>Toca no ecrã para jogar — O Pai Natal está à espera!</p>
     <button id="startBtn">Começar</button>
   `;
-  document.getElementById('startBtn').addEventListener('click', flap);
+  document.getElementById('startBtn').addEventListener('touchstart', flap);
 }
 
 function spawnPipe() {
@@ -168,7 +168,7 @@ function update(dt) {
         <h1>Distribuiste ${score} presente${score !== 1 ? 's' : ''} 🎁</h1>
         <button id="startBtn">Tentar novamente</button>
       `;
-      document.getElementById('startBtn').addEventListener('click', flap);
+      document.getElementById('startBtn').addEventListener('touchstart', flap);
     }
   }
 
@@ -243,5 +243,6 @@ loop(performance.now());
 
 </body>
 </html>
+
 
 
