@@ -252,15 +252,15 @@ function draw() {
   ctx.font = `${width*0.035}px 'Mountains of Christmas'`;
   ctx.fillText(`Best: ${best}`, width*0.88, height*0.05);
 }
-
+canvas.addEventListener('touchstart', flap);
 // Eventos
-if(isMobile){
- canvas.addEventListener('touchstart', flap);
-  }, {passive:false});
-} else {
-  canvas.addEventListener('mousedown', flap);
-  document.addEventListener('keydown', e => { if(e.code==='Space') flap(); });
-}
+//if(isMobile){
+// canvas.addEventListener('touchstart', flap);
+ // }, {passive:false});
+//} else {
+ // canvas.addEventListener('mousedown', flap);
+ // document.addEventListener('keydown', e => { if(e.code==='Space') flap(); });
+//}
 
 let lastTime = performance.now();
 function loop(now){
@@ -277,6 +277,7 @@ loop(performance.now());
 
 </body>
 </html>
+
 
 
 
