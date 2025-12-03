@@ -263,7 +263,7 @@ const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test
 
 // Eventos de input
 if(isMobile){
-  canvas.addEventListener('touchstart', flap, {passive: false});
+  canvas.addEventListener('touchstart', flap);
 }else{
   canvas.addEventListener('mousedown', flap);
   document.addEventListener('keydown', (e)=>{ if(e.code==='Space') flap(); });
@@ -284,6 +284,7 @@ loop(performance.now());
 
 </body>
 </html>
+
 
 
 
