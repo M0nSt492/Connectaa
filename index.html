@@ -4,29 +4,43 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Flappy Connecta</title>
+
+<!-- Fonte natalícia -->
+<link href="https://fonts.googleapis.com/css2?family=Mountains+of+Christmas:wght@400;700&display=swap" rel="stylesheet">
+
 <style>
   body {
     margin: 0;
     overflow: hidden;
+    font-family: 'Mountains of Christmas', cursive;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
     background: #000;
     touch-action: manipulation;
-    position: relative;
   }
 
   canvas {
-    position: absolute;
-    top: 0;
-    left: 0;
+    display: block;
+    background: none;
     touch-action: manipulation;
   }
 
   #overlay {
     position: absolute;
+    top: 40%;
+    left: 0;
     width: 100%;
-    text-align: center;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     color: #fff;
-    font-family: Monaco;
+    text-align: center;
     pointer-events: none;
+    touch-action: manipulation;
+    font-family: 'Mountains of Christmas', cursive;
   }
 
   #overlay button {
@@ -35,9 +49,10 @@
     font-size: 18px;
     border: none;
     border-radius: 8px;
-    background: rgba(255,255,255,0.85);
-    margin-top: 12px;
+    background: rgba(255,255,255,0.8);
     cursor: pointer;
+    margin-top: 10px;
+    font-family: 'Mountains of Christmas', cursive;
   }
 </style>
 </head>
@@ -52,210 +67,202 @@
 </div>
 
 <script>
-const GAME_W = 480;
-const GAME_H = 640;
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const overlay = document.getElementById('overlay');
+const startBtn = document.getElementById('startBtn');
 
-const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
-canvas.width = GAME_W;
-canvas.height = GAME_H;
+let width = 480;
+let height = 640;
+canvas.width = width;
+canvas.height = height;
 
-const overlay = document.getElementById("overlay");
-const startBtn = document.getElementById("startBtn");
+// Imagens
+const bgImg = new Image();
+bgImg.src = 'menuu.jpg';
 
-// imagens
-const bgImg = new Image(); bgImg.src = "menuu.jpg";
-const santaImg = new Image(); santaImg.src = "santa.png";
-const logoImg = new Image(); logoImg.src = "connecta.png";
+const santaImg = new Image();
+santaImg.src = 'santa.png';
 
-// jogador
-let player = { x: 100, y: GAME_H/4, w:48, h:48, vy:0, rotation:0 };
+const logoImg = new Image();
+logoImg.src = 'connecta.png';
+
+// Jogador e física
+let player = {x: 100, y: height/4, w: 48, h: 48, vy: 0, rotation:0};
 let pipes = [];
-let gravity = 0.45;
-let flapStrength = -7;
+let gravity = 0.5;
+let flapStrength = -7; // salto mais rápido
 let pipeGap = 150;
-let pipeSpeed = 3.3;
 let pipeWidth = 60;
+let pipeSpeed = 3.4;
 let pipeInterval = 1600;
 let lastPipeTime = 0;
 let score = 0;
-let best = Number(localStorage.getItem("flappy_connecta_best") || 0);
-let started = false;
+let best = Number(localStorage.getItem('flappy_connecta_best') || 0);
 let gameOver = false;
+let started = false;
 
-function resetGame(){
-    pipes = [];
-    player.y = GAME_H/4;
-    player.vy = 0;
-    player.rotation = 0;
-    score = 0;
-    started = false;
-    gameOver = false;
+function resetGame() {
+  pipes = [];
+  player.y = height/4;
+  player.vy = 0;
+  player.rotation = 0;
+  score = 0;
+  gameOver = false;
+  started = false;
 
-    overlay.style.display = "block";
-    overlay.innerHTML = `
-      <h1>Flappy Connecta</h1>
-      <p>Toca no ecrã para jogar — O Pai Natal está à espera!</p>
-      <button id="startBtn">Começar</button>
-    `;
-    document.getElementById("startBtn").addEventListener("touchstart", flap, {passive:false});
+  overlay.style.display = 'flex';
+  overlay.innerHTML = `
+    <h1>Flappy Connecta</h1>
+    <p>Toca no ecrã para jogar — O Pai Natal está à espera!</p>
+    <button id="startBtn">Começar</button>
+  `;
+
+  const btn = document.getElementById('startBtn');
+  btn.addEventListener('touchstart', function(e){
+      e.preventDefault();
+      flap();
+  }, {passive: false});
 }
 
-function spawnPipe(){
-    const minTop = 60;
-    const maxTop = GAME_H - pipeGap - 60;
-    const top = Math.floor(Math.random() * (maxTop - minTop)) + minTop;
-    pipes.push({x: GAME_W + 20, top: top, scored:false});
+function spawnPipe() {
+  const minTop = 60;
+  const maxTop = height - pipeGap - 60;
+  const top = Math.floor(Math.random() * (maxTop - minTop + 1)) + minTop;
+  pipes.push({x: width + 10, top: top, scored:false});
 }
 
-function flap(e){
-    if(e) e.preventDefault();
-
-    if(gameOver){
-        resetGame();
-        return;
-    }
-    started = true;
-    overlay.style.display = "none";
-    player.vy = flapStrength;
-    player.rotation = -0.6;
+function flap() {
+  if(gameOver) {
+    resetGame();
+    return;
+  }
+  player.vy = flapStrength;
+  player.rotation = -0.9;
+  started = true;
+  overlay.style.display = 'none';
 }
 
-function rectsIntersect(a,b){
-    return !(a.x + a.w < b.x || a.x > b.x + b.w || a.y + a.h < b.y || a.y > b.y + b.h);
+function rectsIntersect(a,b) {
+  return !(a.x + a.w < b.x || a.x > b.x + b.w || a.y + a.h < b.y || a.y > b.y + b.h);
 }
 
-function update(dt){
-    if(!started || gameOver) return;
+function update(dt) {
+  if(!started || gameOver) return;
 
-    player.vy += gravity;
-    player.y += player.vy * (dt/16.66);
-    player.rotation = Math.max(Math.min(player.vy/12, 1.2), -1.2);
+  player.vy += gravity;
+  player.y += player.vy * (dt/16.6667);
+  player.rotation = Math.max(Math.min(player.vy / 12, 1.2), -1.2);
 
-    if(performance.now() - lastPipeTime > pipeInterval){
-        spawnPipe();
-        lastPipeTime = performance.now();
-    }
+  if(performance.now() - lastPipeTime > pipeInterval) {
+    spawnPipe();
+    lastPipeTime = performance.now();
+  }
 
-    for(let i = pipes.length-1; i >= 0; i--){
-        let p = pipes[i];
-        p.x -= pipeSpeed * (dt/16.66);
+  for(let i=pipes.length-1;i>=0;i--){
+    let p = pipes[i];
+    p.x -= pipeSpeed * (dt/16.6667);
 
-        if(!p.scored && p.x + pipeWidth < player.x){
-            p.scored = true;
-            score++;
-            if(score > best){
-                best = score;
-                localStorage.setItem("flappy_connecta_best", best);
-            }
-        }
-
-        if(p.x + pipeWidth < -20) pipes.splice(i,1);
-
-        const playerRect = {x: player.x-player.w/2, y:player.y-player.h/2, w:player.w, h:player.h};
-        const pipeTopRect = {x:p.x, y:0, w:pipeWidth, h:p.top};
-        const pipeBottomRect = {x:p.x, y:p.top+pipeGap, w:pipeWidth, h:GAME_H-(p.top+pipeGap)};
-
-        if(rectsIntersect(playerRect, pipeTopRect) || rectsIntersect(playerRect, pipeBottomRect)){
-            gameOver = true;
-            overlay.style.display = "block";
-            overlay.innerHTML = `
-              <h1>Distribuiste ${score} presente${score!==1?'s':''} 🎁</h1>
-              <button id="startBtn">Tentar novamente</button>
-            `;
-            document.getElementById("startBtn").addEventListener("touchstart", flap, {passive:false});
-        }
+    if(!p.scored && p.x + pipeWidth < player.x){
+      p.scored = true;
+      score++;
+      if(score>best) { best = score; localStorage.setItem('flappy_connecta_best', best);}
     }
 
-    const half = player.h/2;
-    if(player.y + half > GAME_H){ gameOver = true; overlay.style.display = "block"; }
-    if(player.y - half < 0) { player.y = half; player.vy = 0; }
+    if(p.x + pipeWidth < -20) pipes.splice(i,1);
+
+    const playerRect = {x: player.x - player.w/2, y: player.y - player.h/2, w: player.w, h: player.h};
+    const pipeTopRect = {x: p.x, y:0, w:pipeWidth, h:p.top};
+    const pipeBottomRect = {x: p.x, y:p.top+pipeGap, w:pipeWidth, h:height-(p.top+pipeGap)};
+
+    if(rectsIntersect(playerRect, pipeTopRect) || rectsIntersect(playerRect, pipeBottomRect)){
+      gameOver = true;
+      overlay.style.display = 'flex';
+      overlay.innerHTML = `
+        <h1>Distribuiste ${score} presente${score !== 1 ? 's' : ''} 🎁</h1>
+        <button id="startBtn">Tentar novamente</button>
+      `;
+      const btn = document.getElementById('startBtn');
+      btn.addEventListener('touchstart', function(e){
+          e.preventDefault();
+          flap();
+      }, {passive: false});
+    }
+  }
+
+  const halfH = player.h/2;
+  if(player.y + halfH > height) { player.y = height-halfH; gameOver=true; overlay.style.display='flex'; }
+  if(player.y - halfH < 0) { player.y = halfH; player.vy=0; }
 }
 
-function draw(){
-    if(bgImg.complete) ctx.drawImage(bgImg,0,0,GAME_W,GAME_H);
-
-    // logo no centro em baixo
-    if(logoImg.complete){
-        const W = 160, H = 50;
-        const x = (GAME_W - W)/2;
-        const y = GAME_H - H - 12;
-        ctx.drawImage(logoImg, x, y, W, H);
-    }
-
-    // pipes
+function drawPipes() {
+  for(let p of pipes){
     ctx.fillStyle = "#B22222";
-    for(let p of pipes){
-        ctx.fillRect(p.x, p.top+pipeGap, pipeWidth, GAME_H-(p.top+pipeGap));
-        ctx.fillRect(p.x, 0, pipeWidth, p.top);
-    }
-
-    // jogador
-    ctx.save();
-    ctx.translate(player.x, player.y);
-    ctx.rotate(player.rotation);
-    if(santaImg.complete)
-        ctx.drawImage(santaImg, -player.w/2, -player.h/2, player.w, player.h);
-    ctx.restore();
-
-    // UI
-    ctx.fillStyle="#fff";
-    ctx.textAlign="center";
-    ctx.font="28px Monaco";
-    ctx.fillText(`Score: ${score}`, GAME_W/2, 48);
-
-   ctx.textAlign = "center";
-ctx.font = "18px Monaco";
-ctx.fillText(`Best: ${best}`, GAME_W / 2, 75);
-
+    ctx.fillRect(p.x, p.top + pipeGap, pipeWidth, height-(p.top+pipeGap));
+    ctx.fillStyle = "#8B0000";
+    ctx.fillRect(p.x, p.top + pipeGap, pipeWidth, 10);
+    ctx.fillStyle = "#B22222";
+    ctx.fillRect(p.x, 0, pipeWidth, p.top);
+    ctx.fillStyle = "#8B0000";
+    ctx.fillRect(p.x, p.top-10, pipeWidth, 10);
+  }
 }
 
-// redimensionar e manter 100% fullscreen
-function resizeCanvas(){
-    const sw = window.innerWidth;
-    const sh = window.innerHeight;
+function draw() {
+  // fundo
+  if(bgImg.complete && bgImg.naturalWidth > 0){
+    ctx.drawImage(bgImg, 0, 0, width, height);
+  }
 
-    const scale = Math.max(sw / GAME_W, sh / GAME_H);
+  // logo
+  if(logoImg.complete && logoImg.naturalWidth > 0){
+    const logoWidth = 160;
+    const logoHeight = 50;
+    const x = (width - logoWidth) / 2;
+    const y = height - logoHeight - 10;
+    ctx.drawImage(logoImg, x, y, logoWidth, logoHeight);
+  }
 
-    const newW = GAME_W * scale;
-    const newH = GAME_H * scale;
+  drawPipes();
 
-    canvas.style.width = newW + "px";
-    canvas.style.height = newH + "px";
-    canvas.style.left = (sw - newW)/2 + "px";
-    canvas.style.top  = (sh - newH)/2 + "px";
+  // jogador
+  ctx.save();
+  ctx.translate(player.x,player.y);
+  ctx.rotate(player.rotation);
+  if(santaImg.complete && santaImg.naturalWidth > 0){
+    ctx.drawImage(santaImg,-player.w/2,-player.h/2,player.w,player.h);
+  }
+  ctx.restore();
 
-    overlay.style.top = sh * 0.35 + "px";
-    overlay.style.width = sw + "px";
+  // UI - todos os textos usam Mountains of Christmas
+  ctx.fillStyle = "#fff";
+  ctx.textAlign = "center";
+  ctx.font = "28px 'Mountains of Christmas', cursive";
+  ctx.fillText(`Score: ${score}`, width/2, 48);
+
+  ctx.font = "18px 'Mountains of Christmas', cursive";
+  ctx.fillText(`Best: ${best}`, width/2, 80);
 }
 
-window.addEventListener("resize", resizeCanvas);
-resizeCanvas();
+canvas.addEventListener('touchstart', function(e){
+    e.preventDefault();
+    flap();
+}, {passive: false});
 
 let lastTime = performance.now();
 function loop(now){
-    const dt = now - lastTime;
-    lastTime = now;
-    update(dt);
-    draw();
-    requestAnimationFrame(loop);
+  const dt = now - lastTime;
+  lastTime = now;
+  update(dt);
+  draw();
+  requestAnimationFrame(loop);
 }
-
-canvas.addEventListener("touchstart", flap, {passive:false});
 
 loop(performance.now());
 </script>
 
 </body>
 </html>
-
-
-
-
-
-
-
-
 
 
 
