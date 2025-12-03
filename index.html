@@ -10,28 +10,29 @@
     margin: 0;
     padding: 0;
     overflow: hidden;
-    height: 100%;
-    background: #000;
     font-family: 'Mountains of Christmas', cursive;
+    background: #000;
   }
+
   canvas {
     display: block;
   }
+
   #overlay {
     position: absolute;
-    top: 40%;
-    width: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     color: #fff;
     text-align: center;
     pointer-events: none;
   }
+
   #overlay button {
     pointer-events: auto;
     padding: 10px 20px;
-    font-size: 18px;
+    font-size: 20px;
     border: none;
     border-radius: 8px;
     background: rgba(255,255,255,0.8);
@@ -43,7 +44,6 @@
 <body>
 
 <canvas id="game"></canvas>
-
 <div id="overlay">
   <h1>Flappy Connecta</h1>
   <p>Toca no ecrã para jogar — O Pai Natal está à espera!</p>
@@ -56,13 +56,6 @@ const ctx = canvas.getContext('2d');
 const overlay = document.getElementById('overlay');
 const startBtn = document.getElementById('startBtn');
 
-const BASE_WIDTH = 480;
-const BASE_HEIGHT = 640;
-
-let scale = 1;
-let offsetX = 0;
-let offsetY = 0;
-
 // Imagens
 const bgImg = new Image();
 bgImg.src = 'menuu.jpg';
@@ -71,11 +64,11 @@ santaImg.src = 'santa.png';
 const logoImg = new Image();
 logoImg.src = 'connecta.png';
 
-// Jogador e física
-let player = {x: 100, y: BASE_HEIGHT/4, w: 48, h: 48, vy:0, rotation:0};
+// Jogo
+let player = {x: 100, y: 100, w: 48, h: 48, vy: 0, rotation:0};
 let pipes = [];
 let gravity = 0.7;
-let flapStrength = -8;
+let flapStrength = -6;
 let pipeGap = 150;
 let pipeWidth = 60;
 let pipeSpeed = 3;
@@ -86,20 +79,22 @@ let best = Number(localStorage.getItem('flappy_connecta_best') || 0);
 let gameOver = false;
 let started = false;
 
-// Redimensionamento fullscreen
-function resizeCanvas(){
+// Ajuste fullscreen
+function resizeCanvas() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
-  scale = Math.min(canvas.width / BASE_WIDTH, canvas.height / BASE_HEIGHT);
-  offsetX = (canvas.width - BASE_WIDTH * scale)/2;
-  offsetY = (canvas.height - BASE_HEIGHT * scale)/2;
+  overlay.style.width = canvas.width + 'px';
+  overlay.style.height = canvas.height + 'px';
+  overlay.style.top = '0px';
+  overlay.style.left = '0px';
 }
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 
+// Reset
 function resetGame() {
   pipes = [];
-  player.y = BASE_HEIGHT/4;
+  player.y = canvas.height/4;
   player.vy = 0;
   player.rotation = 0;
   score = 0;
@@ -115,32 +110,40 @@ function resetGame() {
   document.getElementById('startBtn').addEventListener('click', flap);
 }
 
+// Pipes
 function spawnPipe() {
   const minTop = 60;
-  const maxTop = BASE_HEIGHT - pipeGap - 60;
+  const maxTop = canvas.height - pipeGap - 60;
   const top = Math.floor(Math.random() * (maxTop - minTop + 1)) + minTop;
-  pipes.push({x: BASE_WIDTH + 10, top: top, scored:false});
+  pipes.push({x: canvas.width + 10, top: top, scored:false});
 }
 
+// Flap
 function flap() {
-  if(gameOver){ resetGame(); return; }
+  if(gameOver) {
+    resetGame();
+    return;
+  }
   player.vy = flapStrength;
   player.rotation = -0.6;
   started = true;
   overlay.style.display = 'none';
 }
 
-function rectsIntersect(a,b){
+// Colisão
+function rectsIntersect(a,b) {
   return !(a.x + a.w < b.x || a.x > b.x + b.w || a.y + a.h < b.y || a.y > b.y + b.h);
 }
 
-function update(dt){
+// Update
+function update(dt) {
   if(!started || gameOver) return;
+
   player.vy += gravity;
   player.y += player.vy * (dt/16.6667);
   player.rotation = Math.max(Math.min(player.vy / 12, 1.2), -1.2);
 
-  if(performance.now() - lastPipeTime > pipeInterval){
+  if(performance.now() - lastPipeTime > pipeInterval) {
     spawnPipe();
     lastPipeTime = performance.now();
   }
@@ -154,11 +157,12 @@ function update(dt){
       score++;
       if(score>best){ best = score; localStorage.setItem('flappy_connecta_best', best);}
     }
+
     if(p.x + pipeWidth < -20) pipes.splice(i,1);
 
     const playerRect = {x: player.x - player.w/2, y: player.y - player.h/2, w: player.w, h: player.h};
     const pipeTopRect = {x: p.x, y:0, w:pipeWidth, h:p.top};
-    const pipeBottomRect = {x: p.x, y:p.top+pipeGap, w:pipeWidth, h:BASE_HEIGHT-(p.top+pipeGap)};
+    const pipeBottomRect = {x: p.x, y:p.top+pipeGap, w:pipeWidth, h:canvas.height-(p.top+pipeGap)};
 
     if(rectsIntersect(playerRect, pipeTopRect) || rectsIntersect(playerRect, pipeBottomRect)){
       gameOver = true;
@@ -172,14 +176,15 @@ function update(dt){
   }
 
   const halfH = player.h/2;
-  if(player.y + halfH > BASE_HEIGHT) { player.y = BASE_HEIGHT-halfH; gameOver=true; overlay.style.display='flex'; }
+  if(player.y + halfH > canvas.height) { player.y = canvas.height-halfH; gameOver=true; overlay.style.display='flex'; }
   if(player.y - halfH < 0) { player.y = halfH; player.vy=0; }
 }
 
-function drawPipes(){
+// Draw
+function drawPipes() {
   for(let p of pipes){
     ctx.fillStyle = "#B22222";
-    ctx.fillRect(p.x, p.top + pipeGap, pipeWidth, BASE_HEIGHT-(p.top+pipeGap));
+    ctx.fillRect(p.x, p.top + pipeGap, pipeWidth, canvas.height-(p.top+pipeGap));
     ctx.fillStyle = "#8B0000";
     ctx.fillRect(p.x, p.top + pipeGap, pipeWidth, 10);
     ctx.fillStyle = "#B22222";
@@ -189,45 +194,48 @@ function drawPipes(){
   }
 }
 
-function draw(){
-  // Limpa e aplica transform
-  ctx.setTransform(scale,0,0,scale,offsetX,offsetY);
-  ctx.clearRect(0,0,BASE_WIDTH,BASE_HEIGHT);
+function draw() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
 
   // Fundo
-  if(bgImg.complete && bgImg.naturalWidth>0) ctx.drawImage(bgImg,0,0,BASE_WIDTH,BASE_HEIGHT);
+  if(bgImg.complete && bgImg.naturalWidth > 0){
+    ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
+  }
 
-  // Logo
-  if(logoImg.complete && logoImg.naturalWidth>0){
-    const logoWidth = 160;
-    const logoHeight = 50;
-    const x = (BASE_WIDTH - logoWidth)/2;
-    const y = BASE_HEIGHT - logoHeight - 10;
-    ctx.drawImage(logoImg,x,y,logoWidth,logoHeight);
+  // Logo no centro em baixo
+  if(logoImg.complete && logoImg.naturalWidth > 0){
+    const logoWidth = canvas.width * 0.3;
+    const logoHeight = logoWidth * (logoImg.naturalHeight / logoImg.naturalWidth);
+    const x = (canvas.width - logoWidth)/2;
+    const y = canvas.height - logoHeight - 10;
+    ctx.drawImage(logoImg, x, y, logoWidth, logoHeight);
   }
 
   drawPipes();
 
   // Jogador
   ctx.save();
-  ctx.translate(player.x,player.y);
+  ctx.translate(player.x, player.y);
   ctx.rotate(player.rotation);
-  if(santaImg.complete && santaImg.naturalWidth>0) ctx.drawImage(santaImg,-player.w/2,-player.h/2,player.w,player.h);
+  if(santaImg.complete && santaImg.naturalWidth > 0){
+    const scale = canvas.width / 480; // escalar jogador proporcionalmente
+    ctx.drawImage(santaImg, -player.w/2*scale, -player.h/2*scale, player.w*scale, player.h*scale);
+  }
   ctx.restore();
 
   // UI
-  ctx.fillStyle="#fff";
-  ctx.font="28px 'Mountains of Christmas'";
-  ctx.textAlign="center";
-  ctx.fillText(`Score: ${score}`, BASE_WIDTH/2, 48);
-  ctx.font="16px 'Mountains of Christmas'";
-  ctx.fillText(`Best: ${best}`, BASE_WIDTH-60, 32);
+  ctx.fillStyle = "#fff";
+  ctx.font = `${28 * (canvas.width/480)}px 'Mountains of Christmas'`;
+  ctx.textAlign = "center";
+  ctx.fillText(`Score: ${score}`, canvas.width/2, 48 * (canvas.width/480));
+  ctx.font = `${16 * (canvas.width/480)}px 'Mountains of Christmas'`;
+  ctx.fillText(`Best: ${best}`, canvas.width-60 * (canvas.width/480), 32 * (canvas.width/480));
 }
 
 // Eventos
-canvas.addEventListener('touchstart', function(e){ e.preventDefault(); flap(); }, {passive:false});
+canvas.addEventListener('touchstart', flap, {passive: false});
 canvas.addEventListener('mousedown', flap);
-window.addEventListener('keydown', (e)=>{ if(e.code==='Space') flap(); });
+document.addEventListener('keydown', (e)=>{ if(e.code === 'Space') flap(); });
 
 let lastTime = performance.now();
 function loop(now){
@@ -237,11 +245,14 @@ function loop(now){
   draw();
   requestAnimationFrame(loop);
 }
+
 loop(performance.now());
 </script>
 
 </body>
 </html>
+
+
 
 
 
