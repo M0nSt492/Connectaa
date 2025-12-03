@@ -84,11 +84,11 @@ logoImg.src = 'connecta.png'; // logo
 // Jogador e física
 let player = {x: 100, y: height/4, w: 48, h: 48, vy: 0, rotation:0};
 let pipes = [];
-let gravity = 0.7;
-let flapStrength = -6;
+let gravity = 0.6;
+let flapStrength = -4;
 let pipeGap = 150;
 let pipeWidth = 60;
-let pipeSpeed = 3;
+let pipeSpeed = 2.5;
 let pipeInterval = 1600;
 let lastPipeTime = 0;
 let score = 0;
@@ -256,6 +256,7 @@ loop(performance.now());
 
 </body>
 </html>
+
 
 
 
