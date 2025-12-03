@@ -204,9 +204,10 @@ function draw(){
     ctx.font="28px Monaco";
     ctx.fillText(`Score: ${score}`, GAME_W/2, 48);
 
-    ctx.textAlign="right";
-    ctx.font="16px Monaco";
-    ctx.fillText(`Best: ${best}`, GAME_W - 10, 30);
+   ctx.textAlign = "center";
+ctx.font = "18px Monaco";
+ctx.fillText(`Best: ${best}`, GAME_W / 2, 75);
+
 }
 
 // redimensionar e manter 100% fullscreen
@@ -247,6 +248,7 @@ loop(performance.now());
 
 </body>
 </html>
+
 
 
 
