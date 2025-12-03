@@ -255,9 +255,7 @@ function draw() {
 
 // Eventos
 if(isMobile){
-  canvas.addEventListener('touchstart', function(e){
-    e.preventDefault();
-    flap();
+ canvas.addEventListener('touchstart', flap);
   }, {passive:false});
 } else {
   canvas.addEventListener('mousedown', flap);
@@ -279,6 +277,7 @@ loop(performance.now());
 
 </body>
 </html>
+
 
 
 
